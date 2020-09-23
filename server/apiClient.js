@@ -1,7 +1,7 @@
 const axios = require('axios/index');
 
 const graphQLClient = (query, auth) => {
-
+    console.log(auth);
     const settings = {
         async: true,
         crossDomain: true,
