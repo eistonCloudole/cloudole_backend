@@ -3,7 +3,8 @@ const router = new Router();
 const parse = require('co-body');
 
 // Import queries and mutations here
-const { getProducts } = require('./queries.js');
+const { restApi } = require('./queries.js');
+const { url } = require('koa-router');
  
 const prepareAuth = (ctx) => {
     const accessToken = ctx.cookies.get("accessToken");
@@ -19,8 +20,13 @@ const prepareAuth = (ctx) => {
 router.get('/products/', async (ctx) => {
  
     const auth = prepareAuth(ctx);
- 
-    await getProducts(auth).then(response => ctx.body = response.data.data.products);
+    const url = `https://${auth.shop}/admin/api/2020-10/products.json`
+    const method = 'GET'
+    await restApi(auth, url, method).then(response => {
+        console.log(response.data.products)
+        ctx.body = response.data.products
+    });
+
 });
 
 module.exports = {
