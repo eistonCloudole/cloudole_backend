@@ -57,12 +57,10 @@ exports.signup = (request, response) => {
         console.log(error)
         if (error.code === 'auth/email-already-in-use') {
             return response.status(400).json({email: 'Email is already in used'})
-        } else {
-            response.status(500).json({error: error.code})
-        }
+        } 
+        return response.status(500).json({error: error.code})
     })
-
-
+    return null
 }
 
 
@@ -90,7 +88,7 @@ exports.login = (request, response) => {
         }
         return response.status(500).json({error: error.code})
     })
-
+    return null
 }
 
 exports.addUserDetails = (request, response) => {
@@ -104,7 +102,7 @@ exports.addUserDetails = (request, response) => {
     db.collection('users')
     .add(newUser)
     .then((user) => {
-        response.json({message: `user ${user.id} created successfully`})
+        return response.json({message: `user ${user.id} created successfully`})
     })
     .catch((error) => {
         response.status(500).json({error: error})
