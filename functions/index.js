@@ -1,5 +1,6 @@
 const functions = require('firebase-functions');
-const app = require('express')();
+const express = require('express')
+const app = express();
 const FBAuth = require('./util/fbAuth');
 const dotenv = require('dotenv').config()
 const cors = require('cors');
@@ -10,6 +11,7 @@ const querystring = require('querystring');
 const request = require('request-promise');
 const axios = require('axios');
 
+
 app.use(cors());
 
 const { db } = require('./util/admin');
@@ -17,7 +19,7 @@ const { db } = require('./util/admin');
 const apiKey = '3184f521fc3473624d2142ae452aaec6';
 const apiSecret = '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';
 const scopes = 'read_products';
-const forwardingAddress = "https://cloudole-2f23d.firebaseapp.com";
+const forwardingAddress = "https://cloudole-2f23d.firebaseapp.com/api";
 
 const { signup, login, addUserDetails, getUser} = require('./handlers/user');
 
@@ -96,4 +98,10 @@ app.get('/shopify/callback', (req, res) => {
         res.status(400).send('Required parameters missing');
     }
 });
-exports.api = functions.https.onRequest(app)
+
+
+const main = express();
+main.use('/api', app);
+
+exports.main = functions.https.onRequest(main);
+// exports.api = functions.https.onRequest(app)
