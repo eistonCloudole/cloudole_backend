@@ -17,7 +17,7 @@ const { db } = require('./util/admin');
 const apiKey = '3184f521fc3473624d2142ae452aaec6';
 const apiSecret = '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';
 const scopes = 'read_products';
-const forwardingAddress = "https://us-central1-cloudole-2f23d.cloudfunctions.net/api";
+const forwardingAddress = "https://cloudole-2f23d.firebaseapp.com";
 
 const { signup, login, addUserDetails, getUser} = require('./handlers/user');
 
