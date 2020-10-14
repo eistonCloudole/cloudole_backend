@@ -121,4 +121,4 @@ exports.getUser = (request, response) => {
          return response.json(user);
      })
      .catch((error) => console.log(error));
- }
+}
