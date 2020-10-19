@@ -1,20 +1,23 @@
 const functions = require('firebase-functions');
-const express = require('express')
-const app = express();
+const app = require('express')();
 const FBAuth = require('./util/fbAuth');
 const dotenv = require('dotenv').config()
 const cors = require('cors');
 const crypto = require('crypto');
 const cookie = require('cookie');
+const nonce = require('nonce')();
 const querystring = require('querystring');
 const request = require('request-promise');
 const axios = require('axios');
-const { signup, login, addUserDetails, getUser} = require('./handlers/user');
-const { shopifyLogin, shopifyRedirect} = require('./handlers/shopify');
+
+app.use(cors());
+
 const { db } = require('./util/admin');
 
 
-app.use(cors());
+const { signup, login, addUserDetails, getUser} = require('./handlers/user');
+const { shopifyLogin, shopifyRedirect} = require('./handlers/shopify')
+
 app.post('/signup', signup);
 app.post('/login', login);
 app.get('/users', getUser);
@@ -23,8 +26,8 @@ app.post('/users', FBAuth, addUserDetails);
 app.get('/shopify', shopifyLogin);
 app.get('/shopify/callback', shopifyRedirect);
 
+app.get('/token', (req, res) => {
+    return res.status(200).send('accessToken: ' + req.app.get('access_token'))
+})
 
-const main = express();
-main.use('/api', app);
-
-exports.main = functions.https.onRequest(main);
+exports.api = functions.https.onRequest(app)

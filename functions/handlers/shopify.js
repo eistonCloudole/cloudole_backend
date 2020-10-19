@@ -3,7 +3,7 @@ const nonce = require('nonce')();
 const apiKey = '3184f521fc3473624d2142ae452aaec6';
 const apiSecret = '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';
 const scopes = 'read_products';
-const forwardingAddress = "https://cloudole-2f23d.firebaseapp.com/api";
+const forwardingAddress = "https://us-central1-cloudole-2f23d.cloudfunctions.net/api";
 
 exports.shopifyLogin = (req, res) => {
     const shop = req.query.shop;
@@ -36,7 +36,8 @@ exports.shopifyRedirect = (req, res) => {
       axios.post(accessTokenRequestUrl, accessTokenPayload)
       .then((response) => {
         console.log(response.data)
-        return res.status(200).send('accessToken: ' + response.data.access_token)
+        req.app.set('access_token', response.data.access_token)
+        return res.redirect('/api/token')
       })
       .catch((error) => {
         return res.status(error.statusCode).send(error);
