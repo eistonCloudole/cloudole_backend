@@ -3,7 +3,7 @@ const router = new Router();
 const parse = require('co-body');
 
 // Import queries and mutations here
-const { restApi } = require('./queries.js');
+const { restApi } = require('../functions/handlers/queries.js');
 const { url } = require('koa-router');
  
 const prepareAuth = (ctx) => {

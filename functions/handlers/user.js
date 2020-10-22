@@ -16,6 +16,7 @@ exports.signup = (request, response) => {
         password: request.body.password,
         confirmPassword: request.body.confirmPassword,
         shopifyToken: request.body.shopifyToken,
+        shopName: request.body.shopName,
         createdAt: new Date().toISOString()
     }
     
@@ -24,18 +25,7 @@ exports.signup = (request, response) => {
     if (!valid) return res.status(400).json(errors);
 
     let token, userId;
-
-    db.doc(`/users/${newUser.shopifyToken}`)
-    .get()
-    .then((doc) => {
-      if (doc.exists) {
-        return response.status(400).json({ token: "this token is already taken" });
-      } else {
-        return firebase
-          .auth()
-          .createUserWithEmailAndPassword(newUser.email, newUser.password);
-      }
-    })
+    firebase.auth().createUserWithEmailAndPassword(newUser.email, newUser.password)
     .then(data => {
         userId = data.user.uid
         return data.user.getIdToken()
@@ -46,14 +36,13 @@ exports.signup = (request, response) => {
             shopifyToken: newUser.shopifyToken,
             email: newUser.email,
             createdAt: newUser.createdAt,
+            shopName: newUser.shopName,
             userId: userId
         }
-        return db.doc(`/users/${newUser.email}`).set(userCredential)
-
-    }).then(() => {
+        return db.doc(`/users/${newUser.email}`).set(userCredential)})
+    .then(() => {
         return response.status(201).json({token})
-    })
-    .catch(error => {
+    }).catch(error => {
         console.log(error)
         if (error.code === 'auth/email-already-in-use') {
             return response.status(400).json({email: 'Email is already in used'})
@@ -79,8 +68,20 @@ exports.login = (request, response) => {
     .then(data => {
         return data.user.getIdToken()
     })
-    .then(token => {
-        return response.json({token})
+    .then((token) => {
+        return db.collection('users').doc(user.email).get()
+        .then((data) => {
+            shopify_token = data._fieldsProto.shopifyToken.stringValue
+            shop_name = data._fieldsProto.shopName.stringValue
+            return {shopify_token, shop_name}
+        })
+        .then((requireInfo) => {
+            return response.json({token, requireInfo})
+        })
+        .catch((error) => {
+            console.log(error)
+        })
+
     }).catch(error => {
         console.log(error)
         if (error.code === 'auth/wrong-password') {

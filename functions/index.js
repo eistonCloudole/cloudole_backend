@@ -17,6 +17,7 @@ const { db } = require('./util/admin');
 
 const { signup, login, addUserDetails, getUser} = require('./handlers/user');
 const { shopifyLogin, shopifyRedirect} = require('./handlers/shopify')
+const { productList} = require('./handlers/shopifyApi')
 
 app.post('/signup', signup);
 app.post('/login', login);
@@ -29,5 +30,7 @@ app.get('/shopify/callback', shopifyRedirect);
 app.get('/token', (req, res) => {
     return res.status(200).send('accessToken: ' + req.app.get('access_token'))
 })
+
+app.get('/productList', productList)
 
 exports.api = functions.https.onRequest(app)
