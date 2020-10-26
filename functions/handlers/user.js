@@ -2,13 +2,20 @@ const { admin, db } = require("../util/admin")
 
 const config = require("../util/config")
 
-const firebase = require("firebase");
-firebase.initializeApp(config);
+const firebase = require("firebase")
+firebase.initializeApp(config)
 
-const {
-    validateSignupData,
-    validateLoginData,
-  } = require("../util/validators");
+const {validateSignupData, validateLoginData} = require("../util/validators")
+const {shopifyShopAddress} = require('./shopifyApi')
+// const {Client} = require("@googlemaps/google-maps-services-js");
+
+// const client = new Client({});
+
+// client.geocode
+
+const getAddress = (shopName, shopToken) => {
+
+}
 
 exports.signup = (request, response) => {
     const newUser = {
@@ -68,7 +75,7 @@ exports.login = (request, response) => {
     .then(data => {
         return data.user.getIdToken()
     })
-    .then((token) => {
+    .then(token => {
         return db.collection('users').doc(user.email).get()
         .then((data) => {
             shopify_token = data._fieldsProto.shopifyToken.stringValue
@@ -76,7 +83,7 @@ exports.login = (request, response) => {
             return {shopify_token, shop_name}
         })
         .then((requireInfo) => {
-            return response.json({token, requireInfo})
+            return response.json({token, ...requireInfo})
         })
         .catch((error) => {
             console.log(error)

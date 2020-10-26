@@ -4,7 +4,7 @@ const apiKey = '3184f521fc3473624d2142ae452aaec6';
 const apiSecret = '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';
 const scopes = 'read_products';
 const forwardingAddress = "https://us-central1-cloudole-2f23d.cloudfunctions.net/api";
-const frontendAddress = "http://172.29.78.140:3000/shopify/";
+const frontendAddress = "https://cloudole-2f23d.web.app/shopify";
 const axios = require('axios');
 
 exports.shopifyLogin = (req, res) => {
