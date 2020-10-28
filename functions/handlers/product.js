@@ -1,9 +1,10 @@
 const {shopifyProductList} = require("./shopifyApi")
 
 exports.productList = (req, res) => {
+    console.log(req.header)
     const apiInfo = {
-        shopifyShopName: request.body.shopifyShopName,
-        shopifyToken: request.body.shopifyToken
+        shopifyShopName: req.body.shopifyShopName,
+        shopifyToken: req.body['x-shopify-access-token']
     }
     // const apiInfo = {
     //     shopifyShopName: 'ameni-coco-test.myshopify.com',
