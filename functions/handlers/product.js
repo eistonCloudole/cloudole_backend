@@ -12,10 +12,10 @@ exports.productList = (req, res) => {
     // }
     return shopifyProductList(apiInfo.shopifyShopName, apiInfo.shopifyToken)
     .then((products) => {
-        console.log(products)
+        //console.log(products)
         return res.status(200).json(products)
     })
     .catch((error)=> {
-        console.log(error)
+        console.log(error.response)
     })
 }

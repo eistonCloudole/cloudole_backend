@@ -7,15 +7,10 @@ firebase.initializeApp(config)
 
 const {validateSignupData, validateLoginData} = require("../util/validators")
 const {shopifyShopAddress} = require('./shopifyApi')
-// const {Client} = require("@googlemaps/google-maps-services-js");
 
-// const client = new Client({});
+const GeoPoint = require('geopoint')
 
-// client.geocode
 
-const getAddress = (shopName, shopToken) => {
-
-}
 
 exports.signup = (request, response) => {
     const newUser = {
@@ -39,14 +34,25 @@ exports.signup = (request, response) => {
     })
     .then(cloudoleToken => {
         token = cloudoleToken
-        const userCredential = {
-            shopifyToken: newUser.shopifyToken,
-            email: newUser.email,
-            createdAt: newUser.createdAt,
-            shopName: newUser.shopName,
-            userId: userId
-        }
-        return db.doc(`/users/${newUser.email}`).set(userCredential)})
+        return shopifyShopAddress(newUser.shopName, newUser.shopifyToken)
+        .then((res) => {
+            return res
+        })
+        .then((shop) => {
+            console.log(shop)
+            const userCredential = {
+                shopifyToken: newUser.shopifyToken,
+                email: newUser.email,
+                createdAt: newUser.createdAt,
+                shopName: newUser.shopName,
+                userId: userId,
+                shop: shop
+            }
+            return db.doc(`/users/${newUser.email}`).set(userCredential)})
+        })
+        .catch((error) => {
+            console.log(error)
+        })     
     .then(() => {
         return response.status(201).json({token})
     }).catch(error => {
@@ -118,6 +124,7 @@ exports.addUserDetails = (request, response) => {
 }
 
 exports.getUser = (request, response) => {
+    console.log(calculateDistance())
     db.collection('users').orderBy('createdAt', 'desc').get()
      .then((data) => {
          let user = [];
@@ -130,3 +137,10 @@ exports.getUser = (request, response) => {
      })
      .catch((error) => console.log(error));
 }
+
+function calculateDistance() {
+    origin = new GeoPoint(43.445069, -80.49329)
+    destination = new GeoPoint(43.473698, -80.535986)
+    return origin.distanceTo(destination, true)
+}
+
