@@ -4,14 +4,12 @@ const {restApi} = require("./restApi")
 
 
 exports.shopifyProductList = (shopName, shopToken) => {
-
-    products = {}
     const url = `https://${shopName}/admin/api/2020-10/products.json`
     const method = 'GET'
-
     return restApi(shopToken, url, method)
     .then((res) => {
-        //console.log(res.data.products[1])
+        //console.log(res.data.products)
+        products = {}
         for (i = 0; i < res.data.products.length; i++) {
             for (j = 0; j < res.data.products[i].variants.length; j++) {
                 const product = {
@@ -24,24 +22,25 @@ exports.shopifyProductList = (shopName, shopToken) => {
                     unit: res.data.products[i].variants[j].weight_unit,
                     quantity: res.data.products[i].variants[j].inventory_quantity
                 }
-                products[product.variant_id] = product  
+                products[product.barcode] = product  
             }
         }
+
         return products
     }).catch((error) => {
-        //console.log(Object.values(error.response.data))
-        if (Object.values(error.response.data) ==  '[API] Invalid API key or access token (unrecognized login or wrong password)') {
+        // if (Object.values(error.response.data) ===  '[API] Invalid API key or access token (unrecognized login or wrong password)') {
             return {
-                error: Object.values(error.response.data)
+                error: error
             }
-        }
+        // } else {
+        //     return 
+        // }
     })
 }
 
 exports.shopifyShopAddress = (shopName, shopToken) => {
     const url = `https://${shopName}/admin/api/2020-10/shop.json`
     const method = 'GET'
-    
     return restApi(shopToken, url, method)
     .then((res) => {
         console.log(res)

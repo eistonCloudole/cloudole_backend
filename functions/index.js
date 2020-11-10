@@ -15,7 +15,7 @@ app.use(cors());
 const { db } = require('./util/admin');
 
 
-const { signup, login, addUserDetails, getUser} = require('./handlers/user');
+const { signup, login, addUserDetails, getUser, storeNearCustomer} = require('./handlers/user');
 const { shopifyLogin, shopifyRedirect} = require('./handlers/shopify')
 const { productList} = require('./handlers/product')
 
@@ -32,5 +32,7 @@ app.get('/token', (req, res) => {
 })
 
 app.get('/productList', productList)
+
+app.get('/storeNearCustomer', storeNearCustomer)
 
 exports.api = functions.https.onRequest(app)

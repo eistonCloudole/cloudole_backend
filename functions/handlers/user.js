@@ -3,13 +3,17 @@ const { admin, db } = require("../util/admin")
 const config = require("../util/config")
 
 const firebase = require("firebase")
+const geofirestore = require('geofirestore')
 firebase.initializeApp(config)
 
 const {validateSignupData, validateLoginData} = require("../util/validators")
 const {shopifyShopAddress} = require('./shopifyApi')
+const {shopifyProductList} = require("./shopifyApi")
 
-const GeoPoint = require('geopoint')
+const firestore = firebase.firestore()
 
+const GeoFirestore = geofirestore.initializeApp(firestore);
+const geocollection = GeoFirestore.collection('users');
 
 
 exports.signup = (request, response) => {
@@ -24,7 +28,7 @@ exports.signup = (request, response) => {
     
     const { valid, errors } = validateSignupData(newUser);
 
-    if (!valid) return res.status(400).json(errors);
+    if (!valid) return response.status(400).json(errors);
 
     let token, userId;
     firebase.auth().createUserWithEmailAndPassword(newUser.email, newUser.password)
@@ -46,15 +50,14 @@ exports.signup = (request, response) => {
                 createdAt: newUser.createdAt,
                 shopName: newUser.shopName,
                 userId: userId,
-                shop: shop
+                shop: shop,
             }
-            return db.doc(`/users/${newUser.email}`).set(userCredential)})
-        })
-        .catch((error) => {
-            console.log(error)
-        })     
-    .then(() => {
-        return response.status(201).json({token})
+            geocollection.doc(userCredential.email).set({
+                coordinates: new firebase.firestore.GeoPoint(shop.latitude, shop.longitude),
+                userCredential: userCredential
+            })
+            return response.status(201).json({token})
+        })        
     }).catch(error => {
         console.log(error)
         if (error.code === 'auth/email-already-in-use') {
@@ -84,17 +87,13 @@ exports.login = (request, response) => {
     .then(token => {
         return db.collection('users').doc(user.email).get()
         .then((data) => {
-            shopify_token = data._fieldsProto.shopifyToken.stringValue
-            shop_name = data._fieldsProto.shopName.stringValue
+            shopify_token = data._fieldsProto.userCredential.mapValue.fields.shopifyToken.stringValue
+            shop_name = data._fieldsProto.userCredential.mapValue.fields.shopName.stringValue
             return {shopify_token, shop_name}
         })
         .then((requireInfo) => {
             return response.json({token, ...requireInfo})
         })
-        .catch((error) => {
-            console.log(error)
-        })
-
     }).catch(error => {
         console.log(error)
         if (error.code === 'auth/wrong-password') {
@@ -124,8 +123,7 @@ exports.addUserDetails = (request, response) => {
 }
 
 exports.getUser = (request, response) => {
-    console.log(calculateDistance())
-    db.collection('users').orderBy('createdAt', 'desc').get()
+    db.collection('users').get()
      .then((data) => {
          let user = [];
          data.forEach((doc) => {
@@ -138,9 +136,49 @@ exports.getUser = (request, response) => {
      .catch((error) => console.log(error));
 }
 
-function calculateDistance() {
-    origin = new GeoPoint(43.445069, -80.49329)
-    destination = new GeoPoint(43.473698, -80.535986)
-    return origin.distanceTo(destination, true)
+exports.storeNearCustomer = (request, response) => {
+    // const location = {
+    //     latitude:req.header('latitude'),
+    //     longitude: req.header('longitude'),
+    //     distance: req.header('distance')
+    // }
+    // const query = geocollection.near({ center: new firebase.firestore.GeoPoint(location.latitude, location.longitude), radius: location.distance });
+
+    const query = geocollection.near({ center: new firebase.firestore.GeoPoint(43.6497062, -79.3765177), radius: 5 });
+    query.get()
+    .then(function(querySnapshot) {
+        totalSize = querySnapshot.size
+        size = 0
+        querySnapshot.forEach(function(doc) {
+            // doc.data() is never undefined for query doc snapshots
+            ans = []
+
+            console.log(doc.id, " => ", doc.data().userCredential.shopName);
+            shopName =  doc.data().userCredential.shopName,
+            shopifyToken = doc.data().userCredential.shopifyToken,
+            coordinates = doc.data().coordinates 
+
+            return shopifyProductList(shopName, shopifyToken)
+            .then((product) => {
+                allBarcode = Object.entries(product)
+                for(const [barcode, product] of allBarcode) {
+                    if (barcode === '123456788') {
+                        ans.push({barcode: barcode,product: product,coordinates: coordinates})
+                    }
+                }
+                size += 1
+                // manually check when to return the data alternative solution?
+                if (size === totalSize) {
+                    return response.status(200).json(ans)
+                }
+                return null
+            })
+        })
+        return null
+    })
+    .catch(function(error) {
+            console.log("Error getting documents: ", error);
+    });
+
 }
 
