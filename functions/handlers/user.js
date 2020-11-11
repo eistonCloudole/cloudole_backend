@@ -137,14 +137,14 @@ exports.getUser = (request, response) => {
 }
 
 exports.storeNearCustomer = (request, response) => {
-    // const location = {
-    //     latitude:req.header('latitude'),
-    //     longitude: req.header('longitude'),
-    //     distance: req.header('distance')
-    // }
-    // const query = geocollection.near({ center: new firebase.firestore.GeoPoint(location.latitude, location.longitude), radius: location.distance });
+    const info = {
+        latitude:request.header('latitude'),
+        longitude: request.header('longitude'),
+        barcode: request.header('barcode')
+    }
 
-    const query = geocollection.near({ center: new firebase.firestore.GeoPoint(43.6497062, -79.3765177), radius: 5 });
+
+    const query = geocollection.near({ center: new firebase.firestore.GeoPoint(info.latitude, info.longitude), radius: 5 });
     query.get()
     .then(function(querySnapshot) {
         totalSize = querySnapshot.size
@@ -162,7 +162,7 @@ exports.storeNearCustomer = (request, response) => {
             .then((product) => {
                 allBarcode = Object.entries(product)
                 for(const [barcode, product] of allBarcode) {
-                    if (barcode === '123456788') {
+                    if (barcode === info.barcode) {
                         ans.push({barcode: barcode,product: product,coordinates: coordinates})
                     }
                 }
