@@ -25,7 +25,6 @@ exports.shopifyProductList = (shopName, shopToken) => {
                 products[product.barcode] = product  
             }
         }
-
         return products
     }).catch((error) => {
         // if (Object.values(error.response.data) ===  '[API] Invalid API key or access token (unrecognized login or wrong password)') {

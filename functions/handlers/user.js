@@ -144,28 +144,35 @@ exports.storeNearCustomer = (request, response) => {
     }
 
 
-    const query = geocollection.near({ center: new firebase.firestore.GeoPoint(info.latitude, info.longitude), radius: 5 });
+    const query = geocollection.near({ center: new firebase.firestore.GeoPoint(parseFloat(info.latitude), parseFloat(info.longitude)), radius: 5 });
     query.get()
     .then(function(querySnapshot) {
         totalSize = querySnapshot.size
         size = 0
+        ans = []
+        coordinates = []
         querySnapshot.forEach(function(doc) {
             // doc.data() is never undefined for query doc snapshots
-            ans = []
 
-            console.log(doc.id, " => ", doc.data().userCredential.shopName);
+            // console.log(ans, 'hihihi')
+            // console.log(doc.id, " => ", doc.data().userCredential.shopName);
             shopName =  doc.data().userCredential.shopName,
             shopifyToken = doc.data().userCredential.shopifyToken,
-            coordinates = doc.data().coordinates 
-
+            coordinates.push(doc.data().coordinates)  
+            console.log(coordinates)
             return shopifyProductList(shopName, shopifyToken)
             .then((product) => {
+                console.log('here')
+                // console.log('jjkkkkkkkkkkkkkk')
                 allBarcode = Object.entries(product)
                 for(const [barcode, product] of allBarcode) {
                     if (barcode === info.barcode) {
-                        ans.push({barcode: barcode,product: product,coordinates: coordinates})
+                        ans.push({barcode: barcode,
+                                  product: product,
+                                  coordinates: coordinates[size]})
                     }
                 }
+                console.log(ans, 'hi')
                 size += 1
                 // manually check when to return the data alternative solution?
                 if (size === totalSize) {
