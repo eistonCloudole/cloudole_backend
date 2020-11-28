@@ -18,6 +18,7 @@ const { db } = require('./util/admin');
 const { signup, login, addUserDetails, getUser, storeNearCustomer} = require('./handlers/user');
 const { shopifyLogin, shopifyRedirect} = require('./handlers/shopify')
 const { productList} = require('./handlers/product')
+const { charge} = require('./handlers/checkout')
 
 app.post('/signup', signup);
 app.post('/login', login);
@@ -34,5 +35,7 @@ app.get('/token', (req, res) => {
 app.get('/productList', productList)
 
 app.get('/storeNearCustomer', storeNearCustomer)
+
+// app.post('/checkout', charge)
 
 exports.api = functions.https.onRequest(app)

@@ -148,38 +148,30 @@ exports.storeNearCustomer = (request, response) => {
     query.get()
     .then(function(querySnapshot) {
         totalSize = querySnapshot.size
+        // need to discuss
+        if (totalSize === 0) {
+            return response.status(404).json(null)
+        } 
         size = 0
         ans = []
         coordinates = []
-        querySnapshot.forEach(function(doc) {
+        querySnapshot.forEach(async function(doc) {
             // doc.data() is never undefined for query doc snapshots
-
-            // console.log(ans, 'hihihi')
-            // console.log(doc.id, " => ", doc.data().userCredential.shopName);
             shopName =  doc.data().userCredential.shopName,
             shopifyToken = doc.data().userCredential.shopifyToken,
             coordinates.push(doc.data().coordinates)  
-            console.log(coordinates)
-            return shopifyProductList(shopName, shopifyToken)
-            .then((product) => {
-                console.log('here')
-                // console.log('jjkkkkkkkkkkkkkk')
-                allBarcode = Object.entries(product)
-                for(const [barcode, product] of allBarcode) {
-                    if (barcode === info.barcode) {
-                        ans.push({barcode: barcode,
-                                  product: product,
-                                  coordinates: coordinates[size]})
-                    }
+            shopProduct = await shopifyProductList(shopName, shopifyToken)
+            for (const [barcode, product] of Object.entries(shopProduct)) {
+                if (barcode === info.barcode) {
+                    ans.push({barcode: barcode,
+                              product: product,
+                              coordinates: coordinates[size]})
                 }
-                console.log(ans, 'hi')
-                size += 1
-                // manually check when to return the data alternative solution?
-                if (size === totalSize) {
-                    return response.status(200).json(ans)
-                }
-                return null
-            })
+            }
+            size += 1
+            if (size === totalSize) {
+                return response.status(200).json(ans)
+            }
         })
         return null
     })
