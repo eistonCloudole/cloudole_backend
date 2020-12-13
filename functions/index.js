@@ -18,7 +18,7 @@ const { db } = require('./util/admin');
 const { signup, login, addUserDetails, getUser, storeNearCustomer} = require('./handlers/user');
 const { shopifyLogin, shopifyRedirect} = require('./handlers/shopify')
 const { productList} = require('./handlers/product')
-const { charge} = require('./handlers/checkout')
+const { chargeSavedCard, createPaymentIntent, webhook} = require('./handlers/checkout')
 
 app.post('/signup', signup);
 app.post('/login', login);
@@ -36,6 +36,10 @@ app.get('/productList', productList)
 
 app.get('/storeNearCustomer', storeNearCustomer)
 
-// app.post('/checkout', charge)
+app.post('/checkout', createPaymentIntent)
+
+app.post('/chargeSavedCard', chargeSavedCard)
+
+app.post("/webhook", webhook)
 
 exports.api = functions.https.onRequest(app)

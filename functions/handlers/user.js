@@ -3,6 +3,7 @@ const { admin, db } = require("../util/admin")
 const config = require("../util/config")
 
 const firebase = require("firebase")
+const functions = require('firebase-functions');
 const geofirestore = require('geofirestore')
 firebase.initializeApp(config)
 
@@ -14,9 +15,10 @@ const firestore = firebase.firestore()
 
 const GeoFirestore = geofirestore.initializeApp(firestore);
 const geocollection = GeoFirestore.collection('users');
+const stripe = require('stripe')(functions.config().stripe.token);
 
 
-exports.signup = (request, response) => {
+exports.signup = (request, response)  => {
     const newUser = {
         email: request.body.email,
         password: request.body.password,
@@ -42,8 +44,14 @@ exports.signup = (request, response) => {
         .then((res) => {
             return res
         })
-        .then((shop) => {
-            console.log(shop)
+        .then(async (shop) => {
+            // console.log(shop)
+            const customer = await stripe.customers.create({
+                email: newUser.email,
+                description: newUser.shopName
+                }
+            );
+            console.log(customer)
             const userCredential = {
                 shopifyToken: newUser.shopifyToken,
                 email: newUser.email,
@@ -51,12 +59,13 @@ exports.signup = (request, response) => {
                 shopName: newUser.shopName,
                 userId: userId,
                 shop: shop,
+                stripe_customer: customer.id
             }
             geocollection.doc(userCredential.email).set({
                 coordinates: new firebase.firestore.GeoPoint(shop.latitude, shop.longitude),
                 userCredential: userCredential
             })
-            return response.status(201).json({token})
+            return response.status(201).json({token, id: customer.id})
         })        
     }).catch(error => {
         console.log(error)
@@ -89,7 +98,8 @@ exports.login = (request, response) => {
         .then((data) => {
             shopify_token = data._fieldsProto.userCredential.mapValue.fields.shopifyToken.stringValue
             shop_name = data._fieldsProto.userCredential.mapValue.fields.shopName.stringValue
-            return {shopify_token, shop_name}
+            stripe_id = data._fieldsProto.userCredential.mapValue.fields.stripe_customer.stringValue
+            return {shopify_token, shop_name, stripe_id}
         })
         .then((requireInfo) => {
             return response.json({token, ...requireInfo})
