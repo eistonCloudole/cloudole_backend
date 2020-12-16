@@ -27,61 +27,6 @@ exports.createPaymentIntent = async (req, res) => {
 
 
 
-exports.chargeSavedCard = async (req, res) => {
-  try {
-    const { price, currency, customer_id} = req.body
-    const paymentMethods = await stripe.paymentMethods.list({
-      customer: customer_id,
-      type: "card"
-    });
-
-    // Create and confirm a PaymentIntent with the order amount, currency, 
-    // Customer and PaymentMethod ID
-    console.log(paymentMethods.data[0])
-    paymentIntent = await stripe.paymentIntents.create({
-      amount: price,
-      currency: currency,
-      payment_method: paymentMethods.data[0].id,
-      customer: customer_id,
-      off_session: true,
-      confirm: true
-    });
-    res.send({
-      succeeded: true,
-      clientSecret: paymentIntent.client_secret,
-      publicKey: 'pk_test_dpjyOGsBaKQFXRYd5gTVoBYL00mtQJMKeo'
-    });
-  } catch (err) {
-    if (err.code === "authentication_required") {
-      // Bring the customer back on-session to authenticate the purchase
-      // You can do this by sending an email or app notification to let them know
-      // the off-session purchase failed
-      // Use the PM ID and client_secret to authenticate the purchase
-      // without asking your customers to re-enter their details
-      res.send({
-        error: "authentication_required",
-        paymentMethod: err.raw.payment_method.id,
-        clientSecret: err.raw.payment_intent.client_secret,
-        publicKey: 'pk_test_dpjyOGsBaKQFXRYd5gTVoBYL00mtQJMKeo',
-        amount: price,
-        card: {
-          brand: err.raw.payment_method.card.brand,
-          last4: err.raw.payment_method.card.last4
-        }
-      });
-    } else if (err.code) {
-      // The card was declined for other reasons (e.g. insufficient funds)
-      // Bring the customer back on-session to ask them for a new payment method
-      res.send({
-        error: err.code,
-        clientSecret: err.raw.payment_intent.client_secret,
-        publicKey: 'pk_test_dpjyOGsBaKQFXRYd5gTVoBYL00mtQJMKeo',
-      });
-    } else {
-      console.log("Unknown error occurred", err);
-    }
-  }
-};
 
 
 exports.webhook = async (req, res) => {

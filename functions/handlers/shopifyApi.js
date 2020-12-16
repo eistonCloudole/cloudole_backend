@@ -42,3 +42,16 @@ exports.shopifyShopAddress = (shopName, shopToken) => {
         return res.data.shop
     })
 }
+
+exports.modifyInventory = (req, res) => {
+    const url = `https://ameni-coco-test.myshopify.com/admin/api/2020-10/inventory_items/5851737358498.json`
+    const method = 'PUT'
+    return restApi('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', url, method)
+    .then((data) => {
+        console.log(data)
+        return res.status(200).json(data)
+    })
+    .catch((error)=> {
+        console.log(error.response)
+    })
+}
