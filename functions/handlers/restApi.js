@@ -1,6 +1,8 @@
 const axios = require('axios');
 
-exports.restApi = (token, url, method) => {
+exports.restApi = (token, url, method, body=new Object()) => {
+    console.log(body)
+    axios.defaults.withCredential = true
     const settings = {
       async: true,
       crossDomain: true,
@@ -8,9 +10,11 @@ exports.restApi = (token, url, method) => {
       method: method,
       headers: {
           'X-Shopify-Access-Token': token,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
       },
-      timeout: 10000
+      body,
+      timeout: 1000,
+
   };
-    return axios(settings)
+  return axios(settings)
 }

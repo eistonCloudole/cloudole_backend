@@ -59,7 +59,8 @@ exports.signup = (request, response)  => {
                 shopName: newUser.shopName,
                 userId: userId,
                 shop: shop,
-                stripe_customer: customer.id
+                stripe_customer: customer.id,
+                stripe_account: ""
             }
             geocollection.doc(userCredential.email).set({
                 coordinates: new firebase.firestore.GeoPoint(shop.latitude, shop.longitude),
@@ -79,7 +80,7 @@ exports.signup = (request, response)  => {
 
 
 
-exports.login = (request, response) => {
+exports.login = async (request, response) => {
     const user = {
         email: request.body.email,
         password: request.body.password
@@ -93,18 +94,17 @@ exports.login = (request, response) => {
     .then(data => {
         return data.user.getIdToken()
     })
-    .then(token => {
-        return db.collection('users').doc(user.email).get()
-        .then((data) => {
-            shopify_token = data._fieldsProto.userCredential.mapValue.fields.shopifyToken.stringValue
-            shop_name = data._fieldsProto.userCredential.mapValue.fields.shopName.stringValue
-            stripe_id = data._fieldsProto.userCredential.mapValue.fields.stripe_customer.stringValue
-            return {shopify_token, shop_name, stripe_id}
-        })
-        .then((requireInfo) => {
-            return response.json({token, ...requireInfo})
-        })
-    }).catch(error => {
+    .then(async token  => {
+        const doc = await db.collection('users').doc(user.email).get()
+        shopify_token = doc.get('userCredential').shopifyToken
+        shop_name = doc.get('userCredential').shopName
+        stripe_id = doc.get('userCredential').stripe_customer
+        return {token, shopify_token, shop_name, stripe_id}
+    })
+    .then((requireInfo) => {
+            return response.json({...requireInfo})
+    })
+    .catch(error => {
         console.log(error)
         if (error.code === 'auth/wrong-password') {
             return response.status(403).json({general: 'Wrong credentials, please try again'})

@@ -20,7 +20,8 @@ exports.shopifyProductList = (shopName, shopToken) => {
                     price: res.data.products[i].variants[j].price,
                     weight: res.data.products[i].variants[j].weight,
                     unit: res.data.products[i].variants[j].weight_unit,
-                    quantity: res.data.products[i].variants[j].inventory_quantity
+                    quantity: res.data.products[i].variants[j].inventory_quantity,
+                    inventory_item_id: res.data.products[i].variants[j].inventory_item_id
                 }
                 products[product.barcode] = product  
             }
@@ -43,15 +44,17 @@ exports.shopifyShopAddress = (shopName, shopToken) => {
     })
 }
 
-exports.modifyInventory = (req, res) => {
-    const url = `https://ameni-coco-test.myshopify.com/admin/api/2020-10/inventory_items/5851737358498.json`
-    const method = 'PUT'
-    return restApi('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', url, method)
+exports.modifyInventory = (shopName, shopToken) => {
+    const url = `https://${shopName}/admin/api/2020-10/inventory_levels/adjust.json`
+    const method = 'POST'
+    return restApi(shopToken, url, method)
     .then((data) => {
-        console.log(data)
-        return res.status(200).json(data)
+        console.log('hjhh')
+        console.log(data.data)
+        return data.data
     })
-    .catch((error)=> {
-        console.log(error.response)
-    })
+    .catch((error) => {
+        return error
+
+})
 }

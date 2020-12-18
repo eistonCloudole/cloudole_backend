@@ -12,14 +12,15 @@ const axios = require('axios');
 
 app.use(cors());
 
+
 const { db } = require('./util/admin');
 
 
 const { signup, login, addUserDetails, getUser, storeNearCustomer} = require('./handlers/user');
 const { shopifyLogin, shopifyRedirect} = require('./handlers/shopify')
-const { productList} = require('./handlers/product')
+const { productList, modifyInventory} = require('./handlers/product')
 const { createPaymentIntent, webhook} = require('./handlers/checkout')
-const {modifyInventory} = require('./handlers/shopifyApi')
+const { setupConnectedAccount} = require('./handlers/connectedAccount')
 
 app.post('/signup', signup);
 app.post('/login', login);
@@ -41,6 +42,8 @@ app.post('/checkout', createPaymentIntent)
 
 app.post("/webhook", webhook)
 
-app.put("/modifyInventory", modifyInventory)
+app.post("/modifyInventory", modifyInventory)
+
+app.post("/setupConnectedAccount", setupConnectedAccount)
 
 exports.api = functions.https.onRequest(app)
