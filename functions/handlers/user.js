@@ -146,7 +146,7 @@ exports.getUser = (request, response) => {
      .catch((error) => console.log(error));
 }
 
-exports.storeNearCustomer = (request, response) => {
+exports.storeNearCustomer = async (request, response) => {
     const info = {
         currentShopName: request.header('shopifyShopName'),
         latitude:request.header('latitude'),
@@ -157,46 +157,43 @@ exports.storeNearCustomer = (request, response) => {
 
     const query = geocollection.near({ center: new firebase.firestore.GeoPoint(parseFloat(info.latitude), parseFloat(info.longitude)), radius: 5 });
     query.get()
-    .then(function(querySnapshot) {
-        totalSize = querySnapshot.size
-        // need to discuss
-        if (totalSize === 0) {
-            return response.status(200).json([])
-        } 
-        size = 0
-        ans = []
-        coordinates = []
-        querySnapshot.forEach(function(doc) {
-            // doc.data() is never undefined for query doc snapshots
-            shopName =  doc.data().userCredential.shopName,
-            shopifyToken = doc.data().userCredential.shopifyToken,
-            connectedAccount = doc.data().userCredential.stripe_account
-            coordinates.push(doc.data().coordinates)  
-            shopifyProductList(shopName, shopifyToken)
-            .then(function(shopProduct){
-                for (const [barcode, product] of Object.entries(shopProduct)) {
-                    console.log(shopName)
-                    console.log(info.currentShopName)
-                    console.log(barcode, info.barcode)
-                    if (barcode === info.barcode && shopName !== info.currentShopName && connectedAccount) {
-                        ans.push({barcode: barcode,
-                                  product: product,
-                                  coordinates: coordinates[size],
-                                  connectedAccount: connectedAccount})
-                    }
-                }
-                size += 1
-                if (size === totalSize) {
-                    return response.status(200).json(ans)
-                }
-            })
-            return null
-            })
-            
-    })
-    .catch(function(error) {
+    try{
+        const querySnapshot = await query.get();
+    totalSize = querySnapshot.size
+    // need to discuss
+    if (totalSize === 0) {
+        return response.status(200).json([])
+    } 
+    size = 0
+    ans = []
+    coordinates = []
+
+    for await (const doc of querySnapshot) {
+        shopName =  doc.data().userCredential.shopName,
+        shopifyToken = doc.data().userCredential.shopifyToken,
+        connectedAccount = doc.data().userCredential.stripe_account
+        coordinates.push(doc.data().coordinates)  
+        const shopProduct = await shopifyProductList(shopName, shopifyToken)
+        for (const [barcode, product] of Object.entries(shopProduct)) {
+            console.log(shopName)
+            console.log(info.currentShopName)
+            console.log(barcode, info.barcode)
+            if (barcode === info.barcode && shopName !== info.currentShopName && connectedAccount) {
+                ans.push({barcode: barcode,
+                          product: product,
+                          coordinates: coordinates[size],
+                          connectedAccount: connectedAccount})
+            }
+        }
+        size += 1
+        if (size === totalSize) {
+            return response.status(200).json(ans)
+        }
+        return null
+    }
+    } catch (error) {
             console.log("Error getting documents: ", error);
-    });
+    };
 
 }
 
