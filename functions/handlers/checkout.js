@@ -16,6 +16,7 @@ exports.createPaymentIntent = async (req, res) => {
       transfer_data: {
         destination: `${connectedAccount}`,
       },
+      customer: customer_id
     });
     const paymentMethods = await stripe.paymentMethods.list({
       customer: customer_id,
@@ -30,6 +31,7 @@ exports.createPaymentIntent = async (req, res) => {
     });
   }
   catch(error) {
+    console.log(error)
     return res.status(500).send({
       error: error.message
     });

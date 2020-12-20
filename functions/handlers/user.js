@@ -156,9 +156,9 @@ exports.storeNearCustomer = async (request, response) => {
 
 
     const query = geocollection.near({ center: new firebase.firestore.GeoPoint(parseFloat(info.latitude), parseFloat(info.longitude)), radius: 5 });
-    query.get()
     try{
         const querySnapshot = await query.get();
+        console.log(querySnapshot)
     totalSize = querySnapshot.size
     // need to discuss
     if (totalSize === 0) {
@@ -167,13 +167,14 @@ exports.storeNearCustomer = async (request, response) => {
     size = 0
     ans = []
     coordinates = []
-
-    for await (const doc of querySnapshot) {
+    /* eslint-disable no-await-in-loop */
+    for (const doc of querySnapshot._docs) {
         shopName =  doc.data().userCredential.shopName,
         shopifyToken = doc.data().userCredential.shopifyToken,
         connectedAccount = doc.data().userCredential.stripe_account
         coordinates.push(doc.data().coordinates)  
         const shopProduct = await shopifyProductList(shopName, shopifyToken)
+
         for (const [barcode, product] of Object.entries(shopProduct)) {
             console.log(shopName)
             console.log(info.currentShopName)
@@ -185,15 +186,13 @@ exports.storeNearCustomer = async (request, response) => {
                           connectedAccount: connectedAccount})
             }
         }
-        size += 1
-        if (size === totalSize) {
-            return response.status(200).json(ans)
-        }
-        return null
+
+            
     }
+    return response.status(200).json(ans)
     } catch (error) {
             console.log("Error getting documents: ", error);
-    };
+    }
 
 }
 
