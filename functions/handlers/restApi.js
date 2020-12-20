@@ -12,9 +12,12 @@ exports.restApi = (token, url, method, body=new Object()) => {
           'X-Shopify-Access-Token': token,
           'Content-Type': 'application/json',
       },
-      body,
+
       timeout: 1000,
 
   };
+  if (settings.method === 'POST') {
+    settings.data = body
+  }
   return axios(settings)
 }

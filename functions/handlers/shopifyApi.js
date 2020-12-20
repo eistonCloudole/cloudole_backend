@@ -44,10 +44,10 @@ exports.shopifyShopAddress = (shopName, shopToken) => {
     })
 }
 
-exports.modifyInventory = (shopName, shopToken) => {
+exports.modifyInventory = (shopName, shopToken, body) => {
     const url = `https://${shopName}/admin/api/2020-10/inventory_levels/adjust.json`
     const method = 'POST'
-    return restApi(shopToken, url, method)
+    return restApi(shopToken, url, method, body)
     .then((data) => {
         console.log('hjhh')
         console.log(data.data)

@@ -148,6 +148,7 @@ exports.getUser = (request, response) => {
 
 exports.storeNearCustomer = (request, response) => {
     const info = {
+        currentShopName: request.header('shopifyShopName'),
         latitude:request.header('latitude'),
         longitude: request.header('longitude'),
         barcode: request.header('barcode')
@@ -160,30 +161,38 @@ exports.storeNearCustomer = (request, response) => {
         totalSize = querySnapshot.size
         // need to discuss
         if (totalSize === 0) {
-            return response.status(404).json(null)
+            return response.status(200).json([])
         } 
         size = 0
         ans = []
         coordinates = []
-        querySnapshot.forEach(async function(doc) {
+        querySnapshot.forEach(function(doc) {
             // doc.data() is never undefined for query doc snapshots
             shopName =  doc.data().userCredential.shopName,
             shopifyToken = doc.data().userCredential.shopifyToken,
+            connectedAccount = doc.data().userCredential.stripe_account
             coordinates.push(doc.data().coordinates)  
-            shopProduct = await shopifyProductList(shopName, shopifyToken)
-            for (const [barcode, product] of Object.entries(shopProduct)) {
-                if (barcode === info.barcode) {
-                    ans.push({barcode: barcode,
-                              product: product,
-                              coordinates: coordinates[size]})
+            shopifyProductList(shopName, shopifyToken)
+            .then(function(shopProduct){
+                for (const [barcode, product] of Object.entries(shopProduct)) {
+                    console.log(shopName)
+                    console.log(info.currentShopName)
+                    console.log(barcode, info.barcode)
+                    if (barcode === info.barcode && shopName !== info.currentShopName && connectedAccount) {
+                        ans.push({barcode: barcode,
+                                  product: product,
+                                  coordinates: coordinates[size],
+                                  connectedAccount: connectedAccount})
+                    }
                 }
-            }
-            size += 1
-            if (size === totalSize) {
-                return response.status(200).json(ans)
-            }
-        })
-        return null
+                size += 1
+                if (size === totalSize) {
+                    return response.status(200).json(ans)
+                }
+            })
+            return null
+            })
+            
     })
     .catch(function(error) {
             console.log("Error getting documents: ", error);

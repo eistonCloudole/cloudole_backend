@@ -21,20 +21,16 @@ exports.productList = (req, res) => {
 }
 
 exports.modifyInventory = (req, res) => {
-    // console.log(req.body.shopifyToken)
-    // const apiInfo = {
-    //     shopifyShopName:req.body.shopifyShopName,
-    //     shopifyToken: req.body.shopifyToken,
-    //     location_id: req.body.location_id,
-    //     inventory_item_id: req.body.inventory_item_id,
-    //     available_adjustment: req.body.available_adjustment
-    // }
-    req.httpShouldHandleCookies = false
     const apiInfo = {
-        shopifyShopName:'ameni-coco-test.myshopify.com',
-        shopifyToken:'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'
+        shopifyShopName:req.body.shopifyShopName,
+        shopifyToken: req.body.shopifyToken,
     }
-    return modifyInventory(apiInfo.shopifyShopName, apiInfo.shopifyToken)
+    const body = {
+        location_id: req.body.location_id,
+        inventory_item_id: req.body.inventory_item_id,
+        available_adjustment: req.body.available_adjustment
+    }
+    return modifyInventory(apiInfo.shopifyShopName, apiInfo.shopifyToken, body)
     .then((products) => {
         console.log(products)
         return res.status(200).json(products)

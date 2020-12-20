@@ -4,27 +4,38 @@ const { admin, db } = require("../util/admin")
 
 
 exports.createPaymentIntent = async (req, res) => {
-  const { price, currency, customer_id} = req.body;
+  const { price, currency, customer_id, connectedAccount} = req.body;
 
   // Create or use a preexisting Customer to associate with the payment
   // Create a PaymentIntent with the order amount and currency and the customer id
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: price,
-    currency: currency,
-    customer: customer_id
-  });
-  const paymentMethods = await stripe.paymentMethods.list({
-    customer: customer_id,
-    type: 'card',
-  });
-  // Send publishable key and PaymentIntent details to client
-  res.send({
-    publicKey: 'pk_test_dpjyOGsBaKQFXRYd5gTVoBYL00mtQJMKeo',
-    clientSecret: paymentIntent.client_secret,
-    id: paymentIntent.id,
-    paymentMethods: paymentMethods
-  });
+  try{
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: price * 100,
+      currency: currency,
+      application_fee_amount: price,
+      transfer_data: {
+        destination: `${connectedAccount}`,
+      },
+    });
+    const paymentMethods = await stripe.paymentMethods.list({
+      customer: customer_id,
+      type: 'card',
+    });
+    // Send publishable key and PaymentIntent details to client
+    res.send({
+      publicKey: 'pk_test_dpjyOGsBaKQFXRYd5gTVoBYL00mtQJMKeo',
+      clientSecret: paymentIntent.client_secret,
+      id: paymentIntent.id,
+      paymentMethods: paymentMethods
+    });
+  }
+  catch(error) {
+    return res.status(500).send({
+      error: error.message
+    });
+  }
 }
+
 
 
 
