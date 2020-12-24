@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-exports.restApi = (token, url, method, body=new Object()) => {
+exports.restApi = (token, url, method, body=new Object(), param=new Object()) => {
     console.log(body)
     axios.defaults.withCredential = true
     const settings = {
@@ -18,6 +18,10 @@ exports.restApi = (token, url, method, body=new Object()) => {
   };
   if (settings.method === 'POST') {
     settings.data = body
+  }
+  if (settings.method === 'GET') {
+    settings.params = param
+    console.log(param)
   }
   return axios(settings)
 }

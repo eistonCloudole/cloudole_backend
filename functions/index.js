@@ -28,8 +28,7 @@ const { setupConnectedAccount } = require("./handlers/connectedAccount");
 
 app.post("/signup", signup);
 app.post("/login", login);
-app.get("/users", getUser);
-app.post("/users", FBAuth, addUserDetails);
+
 
 app.get("/shopify", shopifyLogin);
 app.get("/shopify/callback", shopifyRedirect);
