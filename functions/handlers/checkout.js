@@ -61,50 +61,62 @@ const calculatePrice = (items) => {
 
 exports.createOrder = async (req, res) => {
   // tax rate?
-  const { orders, buyerEmail, sellerEmail } = req.body;
+  const { orders, buyerEmail } = req.body;
   const orderTime = new Date().toISOString();
-  let arriveTime = new Date();
-  ArriveTime.setDate(ArriveTime.getDate() + 1);
   let totalFee = 0;
   let transactionDetail = [];
-  let deliveryFee = 1;
+  let deliveryFee = 2.99;
+  // order = [{email, barcode, quantity, locationId}]
   try {
     /* eslint-disable no-await-in-loop */
-    for (order of orders) {
-      const balanceTransaction = await stripe.balanceTransactions.retrieve(
-        order.id
-      );
+    const groupedOrder = orders.reduce((acc, cur) => ({ ...acc, [cur.email]: [...(acc[cur.email] || []), cur] }), {})
+    for (email in groupedOrder) {
+      let userRef = db.collection("users").doc(email);
+      let user = await userRef.get();
+      let shopName = user.data().userCredential.shopName;
+      let shopifyToken = user.data().userCredential.shopifyToken;
+      const shopProduct = await shopifyProductList(shopName, shopifyToken);
       const orderId = orderid.generate();
-      for (item of order.items) {
-        totalFee += item.price * item.quantity;
-        OrderDetail = {
-          orderId: orderId,
-          price: item.price,
-          quantity: item.quantity,
-          delivery: deliveryFee,
-          stripeTransactionFee: balanceTransaction.fee / 100,
-          orderTime: orderTime,
-          arriveTime: arriveTime,
-          itemInfo: order.itemInfo,
-          // customerInfo: order.customerInfo,
-          orderStatus: "processed",
+
+      for (item of groupedOrder[email]) {
+        const param = {
+          inventory_item_ids: shopProduct[item.barcode].inventory_item_id,
+          location_ids: item.locationId,
         };
-        db.collection("orders")
-          .doc(buyerEmail)
-          .set(
-            { orderList: admin.firestore.FieldValue.arrayUnion(orderDetail) },
-            { merge: true }
-          );
-        db.collection("orders")
-          .doc(sellerEmail)
-          .set(
-            { orderList: admin.firestore.FieldValue.arrayUnion(orderDetail) },
-            { merge: true }
-          );
-        transactionDetail.push(orderDetail);
+        const inventoryData = await getInventory(shopName, shopifyToken, param);
+        if (inventoryData.inventory_levels && inventoryData.inventory_levels[0].available >= item.quantity) {
+          let price = shopProduct[item.barcode].price * item.quantity;
+          let stripeTransactionFee = price * 0.03 + 0.3;
+          OrderDetail = {
+            orderId: orderId,
+            unitPrice: shopProduct[item.barcode].price,
+            price,
+            quantity: item.quantity,
+            deliveryFee,
+            stripeTransactionFee,
+            orderTime: orderTime,
+            product: shopProduct[item.barcode],
+            orderStatus: "processed",
+          };
+          db.collection("orders")
+            .doc(buyerEmail)
+            .set(
+              { orderList: admin.firestore.FieldValue.arrayUnion({...orderDetail, buyer:true}) },
+              { merge: true }
+            );
+          db.collection("orders")
+            .doc(sellerEmail)
+            .set(
+              { orderList: admin.firestore.FieldValue.arrayUnion({...orderDetail, seller:true}) },
+              { merge: true }
+            );
+          transactionDetail.push(orderDetail);
+          totalFee += price + deliveryFee + stripeTransactionFee;
+        }
+
       }
-      totalFee += deliveryFee + balanceTransaction.fee / 100;
     }
+
     return res.status(201).json({
       totalFee: totalFee,
       transactionDetail: transactionDetail,

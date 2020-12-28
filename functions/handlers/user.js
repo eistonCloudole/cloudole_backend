@@ -228,6 +228,7 @@ exports.storeNearCustomer = async (request, response) => {
             ans.push({
               barcode: barcode,
               product: product,
+              email,
               coordinates: coordinates[coordinates.length - 1],
               connectedAccount: connectedAccount,
               available: inventoryData.inventory_levels[0].available,
