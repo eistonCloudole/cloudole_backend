@@ -71,13 +71,17 @@ exports.createOrder = async (req, res) => {
     /* eslint-disable no-await-in-loop */
     const groupedOrder = orders.reduce((acc, cur) => ({ ...acc, [cur.email]: [...(acc[cur.email] || []), cur] }), {})
     for (email in groupedOrder) {
-      let userRef = db.collection("users").doc(email);
-      let user = await userRef.get();
-      let shopName = user.data().userCredential.shopName;
-      let shopifyToken = user.data().userCredential.shopifyToken;
+      const userRef = db.collection("users").doc(email);
+      const user = await userRef.get();
+      const shopName = user.data().userCredential.shopName;
+      const shopifyToken = user.data().userCredential.shopifyToken;
       const shopProduct = await shopifyProductList(shopName, shopifyToken);
       const orderId = orderid.generate();
-
+      const password = Math.floor(1000 + Math.random() * 9000);
+      db.collection("password").doc(email).set({
+        orderId,
+        password
+      })
       for (item of groupedOrder[email]) {
         const param = {
           inventory_item_ids: shopProduct[item.barcode].inventory_item_id,
@@ -85,10 +89,10 @@ exports.createOrder = async (req, res) => {
         };
         const inventoryData = await getInventory(shopName, shopifyToken, param);
         if (inventoryData.inventory_levels && inventoryData.inventory_levels[0].available >= item.quantity) {
-          let price = shopProduct[item.barcode].price * item.quantity;
-          let stripeTransactionFee = price * 0.03 + 0.3;
+          const price = shopProduct[item.barcode].price * item.quantity;
+          const stripeTransactionFee = price * 0.03 + 0.3;
           OrderDetail = {
-            orderId: orderId,
+            orderId,
             unitPrice: shopProduct[item.barcode].price,
             price,
             quantity: item.quantity,
