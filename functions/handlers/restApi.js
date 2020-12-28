@@ -19,7 +19,7 @@ exports.restApi = (token, url, method, body=new Object(), param=new Object()) =>
   }
   if (settings.method === 'GET') {
     settings.params = param
-    console.log(param, token, url)
+    // console.log(param, token, url)
   }
   return axios(settings)
 }
