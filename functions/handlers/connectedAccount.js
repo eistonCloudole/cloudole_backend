@@ -14,7 +14,7 @@ exports.setupConnectedAccount = async(req, res)=> {
             if (stripeAccount === "") {
                 console.log('empty id')
                 const account = await stripe.accounts.create({
-                    type: 'express',
+                    type: 'standard',
                     email: email
                 });
                 const add = await db.collection('users').doc(email).update({

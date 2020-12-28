@@ -1,8 +1,6 @@
 const axios = require('axios');
 
 exports.restApi = (token, url, method, body=new Object(), param=new Object()) => {
-    console.log(body)
-    axios.defaults.withCredential = true
     const settings = {
       async: true,
       crossDomain: true,
@@ -13,7 +11,7 @@ exports.restApi = (token, url, method, body=new Object(), param=new Object()) =>
           'Content-Type': 'application/json',
       },
 
-      timeout: 1000,
+      timeout: 10000,
 
   };
   if (settings.method === 'POST') {
@@ -21,7 +19,7 @@ exports.restApi = (token, url, method, body=new Object(), param=new Object()) =>
   }
   if (settings.method === 'GET') {
     settings.params = param
-    console.log(param)
+    console.log(param, token, url)
   }
   return axios(settings)
 }

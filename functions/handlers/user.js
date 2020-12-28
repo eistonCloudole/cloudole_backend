@@ -189,7 +189,7 @@ exports.storeNearCustomer = async (request, response) => {
         for (const [barcode, product] of Object.entries(shopProduct)) {
             // console.log(shopName)
             // console.log(info.currentShopName)
-            // console.log(barcode, info.barcode)
+            console.log(barcode, info.barcode)
             if (barcode === info.barcode && shopName !== info.currentShopName && connectedAccount) {
                 coordinates.push(doc.data().coordinates)
                 let param = {
@@ -197,13 +197,14 @@ exports.storeNearCustomer = async (request, response) => {
                     location_ids: locationId
                 }  
                 const inventoryData = await getInventory(shopName, shopifyToken, param)
-                console.log(inventoryData.inventory_levels[0].available)
+                console.log(inventoryData)
                 ans.push({barcode: barcode,
                           product: product,
-                          coordinates: coordinates[size],
+                          coordinates: coordinates[coordinates.length - 1],
                           connectedAccount: connectedAccount,
-                          available: inventoryData.inventory_levels[0].available})
-                size += 1
+                          available: inventoryData.inventory_levels[0].available,
+                          locationId: locationId
+                        })
             }
         }
 

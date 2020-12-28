@@ -22,7 +22,7 @@ const {
   storeNearCustomer,
 } = require("./handlers/user");
 const { shopifyLogin, shopifyRedirect } = require("./handlers/shopify");
-const { productList, modifyInventory } = require("./handlers/product");
+const { productList, modifyInventory} = require("./handlers/product");
 const { createPaymentIntent, webhook } = require("./handlers/checkout");
 const { setupConnectedAccount } = require("./handlers/connectedAccount");
 
