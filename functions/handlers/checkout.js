@@ -4,31 +4,17 @@ const { admin, db } = require("../util/admin");
 const orderid = require("order-id")("mysecret");
 
 exports.createPaymentIntent = async (req, res) => {
-  // const { items, currency, customer_id } = req.body;
-  // price = calculatePrice(items);
-  let customer_id = "cus_IeNvO3GTKGD7KV";
+  const { items, currency, customer_id} = req.body;
+  price = calculatePrice(items);
+  // let customer_id = "cus_IeNvO3GTKGD7KV";
   // Create or use a preexisting Customer to associate with the payment
   // Create a PaymentIntent with the order amount and currency and the customer id
   try {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: 10000,
-      currency: "cad",
+      currency: currency,
       payment_method_types: ["card"],
       customer: customer_id,
-    });
-
-    const transfer = await stripe.transfers.create({
-      amount: 7000,
-      currency: "cad",
-      destination: "acct_1I35N3IZgQOrwOU1",
-      transfer_group: "distribute payment",
-    });
-
-    const secondTransfer = await stripe.transfers.create({
-      amount: 2000,
-      currency: "cad",
-      destination: "acct_1I359OASYMyIsvvU",
-      transfer_group: "distribute payment",
     });
 
     const paymentMethods = await stripe.paymentMethods.list({
@@ -59,6 +45,29 @@ const calculatePrice = (items) => {
   return price;
 };
 
+exports.receivePayment = async (req, res) => {
+  const { account, amount, currency, password, email } = req.body;
+  try {
+    passwordRef = db.collection("password").doc(email);
+    doc = await passwordRef.get();
+    if (!doc.exists) {
+      return res.status(400).json({ error: "No such password" });
+    }
+    if (password !== doc.data().password) {
+      return res.status(400).json({ error: "Wrong password" });
+    }
+    const transfer = await stripe.transfers.create({
+      amount: amount * 100,
+      currency: currency,
+      destination: account,
+      transfer_group: "distribute payment",
+    });
+    return res.status(201).json(transfer);
+  } catch (error) {
+    return res.status(400).json(error);
+  }
+};
+
 exports.createOrder = async (req, res) => {
   // tax rate?
   const { orders, buyerEmail } = req.body;
@@ -69,7 +78,10 @@ exports.createOrder = async (req, res) => {
   // order = [{email, barcode, quantity, locationId}]
   try {
     /* eslint-disable no-await-in-loop */
-    const groupedOrder = orders.reduce((acc, cur) => ({ ...acc, [cur.email]: [...(acc[cur.email] || []), cur] }), {})
+    const groupedOrder = orders.reduce(
+      (acc, cur) => ({ ...acc, [cur.email]: [...(acc[cur.email] || []), cur] }),
+      {}
+    );
     for (email in groupedOrder) {
       const userRef = db.collection("users").doc(email);
       const user = await userRef.get();
@@ -78,17 +90,23 @@ exports.createOrder = async (req, res) => {
       const shopProduct = await shopifyProductList(shopName, shopifyToken);
       const orderId = orderid.generate();
       const password = Math.floor(1000 + Math.random() * 9000);
+      let verification = {
+        orderId: orderId,
+        password: password,
+      };
       db.collection("password").doc(email).set({
-        orderId,
-        password
-      })
+        verification,
+      });
       for (item of groupedOrder[email]) {
         const param = {
           inventory_item_ids: shopProduct[item.barcode].inventory_item_id,
           location_ids: item.locationId,
         };
         const inventoryData = await getInventory(shopName, shopifyToken, param);
-        if (inventoryData.inventory_levels && inventoryData.inventory_levels[0].available >= item.quantity) {
+        if (
+          inventoryData.inventory_levels &&
+          inventoryData.inventory_levels[0].available >= item.quantity
+        ) {
           const price = shopProduct[item.barcode].price * item.quantity;
           const stripeTransactionFee = price * 0.03 + 0.3;
           OrderDetail = {
@@ -105,19 +123,28 @@ exports.createOrder = async (req, res) => {
           db.collection("orders")
             .doc(buyerEmail)
             .set(
-              { orderList: admin.firestore.FieldValue.arrayUnion({...orderDetail, buyer:true}) },
+              {
+                orderList: admin.firestore.FieldValue.arrayUnion({
+                  ...orderDetail,
+                  buyer: true,
+                }),
+              },
               { merge: true }
             );
           db.collection("orders")
             .doc(sellerEmail)
             .set(
-              { orderList: admin.firestore.FieldValue.arrayUnion({...orderDetail, seller:true}) },
+              {
+                orderList: admin.firestore.FieldValue.arrayUnion({
+                  ...orderDetail,
+                  seller: true,
+                }),
+              },
               { merge: true }
             );
           transactionDetail.push(orderDetail);
           totalFee += price + deliveryFee + stripeTransactionFee;
         }
-
       }
     }
 
