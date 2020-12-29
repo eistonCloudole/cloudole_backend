@@ -84,10 +84,11 @@ exports.findLocation = (shopName, shopToken) => {
         for (let i = 0; i < data.data.locations.length; i++) {
             location.push({
                 id: data.data.locations[i].id,
-                address: data.data.locations[i].address1 + data.data.locations[i].city +  data.data.locations[i].province + data.data.locations[i].country,
+                address: data.data.locations[i].address1 + " " + data.data.locations[i].city + " " + data.data.locations[i].province + " " + data.data.locations[i].country,
                 active: data.data.locations[i].active
             })
         }
+        console.log(location)
         return location
     })
     .catch((error) => {

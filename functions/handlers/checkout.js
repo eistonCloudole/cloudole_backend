@@ -4,14 +4,14 @@ const { admin, db } = require("../util/admin");
 const orderid = require("order-id")("mysecret");
 
 exports.createPaymentIntent = async (req, res) => {
-  const { items, currency, customer_id} = req.body;
-  price = calculatePrice(items);
+  const { orders, currency, buyerEmail, customer_id} = req.body;
+  orderInfo = calculatePrice(orders, buyerEmail);
   // let customer_id = "cus_IeNvO3GTKGD7KV";
   // Create or use a preexisting Customer to associate with the payment
   // Create a PaymentIntent with the order amount and currency and the customer id
   try {
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: 10000,
+      amount: price,
       currency: currency,
       payment_method_types: ["card"],
       customer: customer_id,
@@ -28,6 +28,7 @@ exports.createPaymentIntent = async (req, res) => {
       clientSecret: paymentIntent.client_secret,
       id: paymentIntent.id,
       paymentMethods: paymentMethods,
+      ...orderInfo
     });
   } catch (error) {
     console.log(error);
@@ -37,41 +38,8 @@ exports.createPaymentIntent = async (req, res) => {
   }
 };
 
-const calculatePrice = (items) => {
-  let price = 0;
-  for (item of items) {
-    price += item.price * item.quantity;
-  }
-  return price;
-};
-
-exports.receivePayment = async (req, res) => {
-  const { account, amount, currency, password, email } = req.body;
-  try {
-    passwordRef = db.collection("password").doc(email);
-    doc = await passwordRef.get();
-    if (!doc.exists) {
-      return res.status(400).json({ error: "No such password" });
-    }
-    if (password !== doc.data().password) {
-      return res.status(400).json({ error: "Wrong password" });
-    }
-    const transfer = await stripe.transfers.create({
-      amount: amount * 100,
-      currency: currency,
-      destination: account,
-      transfer_group: "distribute payment",
-    });
-    return res.status(201).json(transfer);
-  } catch (error) {
-    return res.status(400).json(error);
-  }
-};
-
-exports.createOrder = async (req, res) => {
-  // tax rate?
-  const { orders, buyerEmail } = req.body;
-  const orderTime = new Date().toISOString();
+const calculatePrice = (orders, buyerEmail) => {
+ const orderTime = new Date().toISOString();
   let totalFee = 0;
   let transactionDetail = [];
   let deliveryFee = 2.99;
@@ -132,7 +100,7 @@ exports.createOrder = async (req, res) => {
               { merge: true }
             );
           db.collection("orders")
-            .doc(sellerEmail)
+            .doc(email)
             .set(
               {
                 orderList: admin.firestore.FieldValue.arrayUnion({
@@ -148,10 +116,33 @@ exports.createOrder = async (req, res) => {
       }
     }
 
-    return res.status(201).json({
+    return({
       totalFee: totalFee,
       transactionDetail: transactionDetail,
     });
+  } catch (error) {
+    return error;
+  }
+};
+
+exports.receivePayment = async (req, res) => {
+  const { account, amount, currency, password, email } = req.body;
+  try {
+    passwordRef = db.collection("password").doc(email);
+    doc = await passwordRef.get();
+    if (!doc.exists) {
+      return res.status(400).json({ error: "No such password" });
+    }
+    if (password !== doc.data().password) {
+      return res.status(400).json({ error: "Wrong password" });
+    }
+    const transfer = await stripe.transfers.create({
+      amount: amount * 100,
+      currency: currency,
+      destination: account,
+      transfer_group: "distribute payment",
+    });
+    return res.status(201).json(transfer);
   } catch (error) {
     return res.status(400).json(error);
   }

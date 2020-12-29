@@ -1,4 +1,4 @@
-const { shopifyProductList, modifyInventory } = require("./shopifyApi");
+const { shopifyProductList, modifyInventory, findLocation } = require("./shopifyApi");
 const { admin, db } = require("../util/admin");
 
 exports.productList = (req, res) => {
@@ -40,6 +40,18 @@ exports.modifyInventory = async (req, res) => {
       body
     );
     return res.status(200).json(products);
+  } catch (error) {
+    return res.status(400).json(error);
+  }
+};
+
+
+exports.getLocation = async (req, res) => {
+  const shopifyShopName = req.header("shopifyShopName")
+  const shopifyToken = req.header("shopifyToken")
+  try {
+    const locations = await findLocation(shopifyShopName, shopifyToken)
+    return res.status(200).json(locations);
   } catch (error) {
     return res.status(400).json(error);
   }
