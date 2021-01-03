@@ -2,16 +2,17 @@ const functions = require("firebase-functions");
 const stripe = require("stripe")(functions.config().stripe.token);
 const { admin, db } = require("../util/admin");
 const orderid = require("order-id")("mysecret");
+const { shopifyProductList, getInventory } = require("./shopifyApi");
 
 exports.createPaymentIntent = async (req, res) => {
-  const { orders, currency, buyerEmail, customer_id} = req.body;
-  orderInfo = calculatePrice(orders, buyerEmail);
+  const { orders, currency, customer_id } = req.body;
+  orderInfo = await calculatePrice(orders);
   // let customer_id = "cus_IeNvO3GTKGD7KV";
   // Create or use a preexisting Customer to associate with the payment
   // Create a PaymentIntent with the order amount and currency and the customer id
   try {
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: price,
+      amount: parseInt(orderInfo.totalFee * 100),
       currency: currency,
       payment_method_types: ["card"],
       customer: customer_id,
@@ -38,12 +39,12 @@ exports.createPaymentIntent = async (req, res) => {
   }
 };
 
-const calculatePrice = (orders, buyerEmail) => {
- const orderTime = new Date().toISOString();
+const calculatePrice = async (orders) => {
+  const orderTime = new Date().toISOString();
   let totalFee = 0;
   let transactionDetail = [];
   let deliveryFee = 2.99;
-  // order = [{email, barcode, quantity, locationId}]
+  // order = [{email, barcode, quantity, location_id, targetLocation}]
   try {
     /* eslint-disable no-await-in-loop */
     const groupedOrder = orders.reduce(
@@ -68,7 +69,7 @@ const calculatePrice = (orders, buyerEmail) => {
       for (item of groupedOrder[email]) {
         const param = {
           inventory_item_ids: shopProduct[item.barcode].inventory_item_id,
-          location_ids: item.locationId,
+          location_ids: item.location_id,
         };
         const inventoryData = await getInventory(shopName, shopifyToken, param);
         if (
@@ -77,47 +78,26 @@ const calculatePrice = (orders, buyerEmail) => {
         ) {
           const price = shopProduct[item.barcode].price * item.quantity;
           const stripeTransactionFee = price * 0.03 + 0.3;
-          OrderDetail = {
+          transactionDetail.push({
             orderId,
             unitPrice: shopProduct[item.barcode].price,
+            email,
             price,
+            targetLocation: item.targetLocation,
             quantity: item.quantity,
             deliveryFee,
             stripeTransactionFee,
-            orderTime: orderTime,
+            timestamp: [orderTime],
             product: shopProduct[item.barcode],
-            orderStatus: "processed",
-          };
-          db.collection("orders")
-            .doc(buyerEmail)
-            .set(
-              {
-                orderList: admin.firestore.FieldValue.arrayUnion({
-                  ...orderDetail,
-                  buyer: true,
-                }),
-              },
-              { merge: true }
-            );
-          db.collection("orders")
-            .doc(email)
-            .set(
-              {
-                orderList: admin.firestore.FieldValue.arrayUnion({
-                  ...orderDetail,
-                  seller: true,
-                }),
-              },
-              { merge: true }
-            );
-          transactionDetail.push(orderDetail);
+            orderStatus: ["processed"],
+          });
           totalFee += price + deliveryFee + stripeTransactionFee;
         }
       }
     }
 
-    return({
-      totalFee: totalFee,
+    return ({
+      totalFee: totalFee.toFixed(2),
       transactionDetail: transactionDetail,
     });
   } catch (error) {
@@ -153,6 +133,41 @@ exports.getOrder = async (req, res) => {
   order = await db.collection("orders").doc(email).get();
   return order.data();
 };
+
+exports.createOrder = async (req, res) => {
+  const { orders, buyerEmail } = req.body;
+  try {
+    orderInfo = await calculatePrice(orders, buyerEmail);
+    console.log(orderInfo);
+    for (OrderDetail of orderInfo.transactionDetail) {
+      db.collection("orders")
+        .doc(buyerEmail)
+        .set(
+          {
+            orderList: admin.firestore.FieldValue.arrayUnion({
+              ...orderDetail,
+              buyer: true,
+            }),
+          },
+          { merge: true }
+        );
+      db.collection("orders")
+        .doc(OrderDetail.email)
+        .set(
+          {
+            orderList: admin.firestore.FieldValue.arrayUnion({
+              ...orderDetail,
+              seller: true,
+            }),
+          },
+          { merge: true }
+        );
+    }
+    res.status(200).send(paymentMethods);
+  } catch (error) {
+    return res.status(400).json(error);
+  }
+}
 
 exports.webhook = async (req, res) => {
   // Check if webhook signing is configured.
