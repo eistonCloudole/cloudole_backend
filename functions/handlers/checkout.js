@@ -163,7 +163,7 @@ exports.createOrder = async (req, res) => {
           { merge: true }
         );
     }
-    res.status(200).send(paymentMethods);
+    res.status(200).send(orderInfo);
   } catch (error) {
     return res.status(400).json(error);
   }
