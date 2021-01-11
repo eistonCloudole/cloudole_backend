@@ -23,7 +23,7 @@ const {
 } = require("./handlers/user");
 const { shopifyLogin, shopifyRedirect } = require("./handlers/shopify");
 const { productList, modifyInventory, getLocation} = require("./handlers/product");
-const { createPaymentIntent, webhook, createOrder } = require("./handlers/checkout");
+const { createPaymentIntent, webhook, createOrder, getOrder } = require("./handlers/checkout");
 const { setupConnectedAccount } = require("./handlers/connectedAccount");
 
 app.post("/signup", signup);
@@ -43,6 +43,7 @@ app.get("/storeNearCustomer", storeNearCustomer);
 
 app.post("/checkout", createPaymentIntent);
 app.post("/createOrder", createOrder);
+app.get("/getOrder", getOrder);
 
 app.post("/webhook", webhook);
 

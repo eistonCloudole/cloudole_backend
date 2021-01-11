@@ -130,8 +130,10 @@ exports.receivePayment = async (req, res) => {
 
 exports.getOrder = async (req, res) => {
   email = req.header("email");
+  console.log(email);
+
   order = await db.collection("orders").doc(email).get();
-  return order.data();
+  return res.status(200).json(order.data());
 };
 
 exports.createOrder = async (req, res) => {
