@@ -36,7 +36,6 @@ exports.productList = async (req, res) => {
       } else {
         console.log('Document data:', product.data().products);
         for (barcode in productInfo) {
-          
           if (barcode in product.data().products) {
             continue
           }
@@ -105,7 +104,7 @@ exports.saveMultiplePrice = async (req, res) => {
     }
     return res.status(200)
   }
-  catch(error) {
+  catch (error) {
     return res.status(400).json(error)
   }
 }
@@ -114,13 +113,13 @@ exports.savePrice = async (req, res) => {
   try {
     const { email, barcode, price } = req.body;
     const key = `products.${barcode}`
-      db.collection("products")
-        .doc(email)
-        .update(
-          {
-            [key]: price
-          }
-        );
+    db.collection("products")
+      .doc(email)
+      .update(
+        {
+          [key]: price
+        }
+      );
     return res.sendStatus(200)
   }
   catch (error) {

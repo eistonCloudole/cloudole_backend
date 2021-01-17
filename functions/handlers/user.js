@@ -213,15 +213,14 @@ exports.storeNearCustomer = async (request, response) => {
     coordinates = [];
     /* eslint-disable no-await-in-loop */
     for (const doc of querySnapshot._docs) {
-      let email = doc.data().email;
-      let locationId = doc.data().location;
-      let userRef = db.collection("users").doc(email);
-      let user = await userRef.get();
-      let shopName = user.data().userCredential.shopName;
-      let shopifyToken = user.data().userCredential.shopifyToken;
-      let connectedAccount = user.data().userCredential.stripe_account;
+      const email = doc.data().email;
+      const locationId = doc.data().location;
+      const userRef = db.collection("users").doc(email);
+      const user = await userRef.get();
+      const shopName = user.data().userCredential.shopName;
+      const shopifyToken = user.data().userCredential.shopifyToken;
+      const connectedAccount = user.data().userCredential.stripe_account;
       const shopProduct = await shopifyProductList(shopName, shopifyToken);
-      console.log(shopProduct);
       for (const [barcode, product] of Object.entries(shopProduct)) {
         if (
           barcode === info.barcode &&
@@ -255,6 +254,9 @@ exports.storeNearCustomer = async (request, response) => {
                 .replace(" km", "")
             );
             let commuteFee = drivingDistance * 1;
+            const productRef = db.collection("products").doc(email);
+            const savedProduct = await productRef.get();
+            product.price = savedProduct.data().products[barcode]
             ans.push({
               barcode: barcode,
               product: product,

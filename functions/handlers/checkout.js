@@ -60,9 +60,10 @@ const calculatePrice = async (orders) => {
       const orderId = orderid.generate();
       const password = Math.floor(1000 + Math.random() * 9000).toString();
       const date = new Date().toISOString()
-      db.collection("password").doc(email).collection(date).doc(orderId).set(
+      db.collection("password").doc(email).collection(orderId).doc(shopName).set(
         {
-          password
+          password: password,
+          used: false
         },
       );
       for (item of groupedOrder[email]) {
@@ -105,20 +106,23 @@ const calculatePrice = async (orders) => {
 };
 
 exports.receivePayment = async (req, res) => {
-  const { amount, currency, password, email } = req.body;
+  const { amount, currency, password, email, shopName } = req.body;
   try {
     const accountRef = db.collection("users").doc(email);
     const account = await accountRef.get()
     const stripeAccount = account.data().userCredential.stripe_account
-    const passwordRef = db.collection("password").doc(email);
+    const passwordRef = db.collection("password").doc(email).collection(orderId).doc(shopName);
     const doc = await passwordRef.get();
     if (!doc.exists) {
       return res.status(400).json({ error: "No such password" });
     }
-    console.log(doc.data().verification.password)
-    if (password !== doc.data().verification.password) {
+    if (password !== doc.data().password) {
       return res.status(400).json({ error: "Wrong password" });
     }
+    if (doc.data().used) {
+      return res.status(400).json({ error: "password Used" });
+    }
+    db.collection("password").doc(email).collection(orderId).doc(shopName).update({used: true})
     const transfer = await stripe.transfers.create({
       amount: amount,
       currency: currency,
