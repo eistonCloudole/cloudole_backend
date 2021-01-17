@@ -29,7 +29,7 @@ exports.createPaymentIntent = async (req, res) => {
       clientSecret: paymentIntent.client_secret,
       id: paymentIntent.id,
       paymentMethods: paymentMethods,
-      ...orderInfo
+      ...orderInfo,
     });
   } catch (error) {
     console.log(error);
@@ -58,14 +58,13 @@ const calculatePrice = async (orders) => {
       const shopifyToken = user.data().userCredential.shopifyToken;
       const shopProduct = await shopifyProductList(shopName, shopifyToken);
       const orderId = orderid.generate();
-      const password = Math.floor(1000 + Math.random() * 9000);
-      let verification = {
-        orderId: orderId,
-        password: password,
-      };
-      db.collection("password").doc(email).set({
-        verification,
-      });
+      const password = Math.floor(1000 + Math.random() * 9000).toString();
+      const date = new Date().toISOString()
+      db.collection("password").doc(email).collection(date).doc(orderId).set(
+        {
+          password
+        },
+      );
       for (item of groupedOrder[email]) {
         const param = {
           inventory_item_ids: shopProduct[item.barcode].inventory_item_id,
@@ -106,20 +105,24 @@ const calculatePrice = async (orders) => {
 };
 
 exports.receivePayment = async (req, res) => {
-  const { account, amount, currency, password, email } = req.body;
+  const { amount, currency, password, email } = req.body;
   try {
-    passwordRef = db.collection("password").doc(email);
-    doc = await passwordRef.get();
+    const accountRef = db.collection("users").doc(email);
+    const account = await accountRef.get()
+    const stripeAccount = account.data().userCredential.stripe_account
+    const passwordRef = db.collection("password").doc(email);
+    const doc = await passwordRef.get();
     if (!doc.exists) {
       return res.status(400).json({ error: "No such password" });
     }
-    if (password !== doc.data().password) {
+    console.log(doc.data().verification.password)
+    if (password !== doc.data().verification.password) {
       return res.status(400).json({ error: "Wrong password" });
     }
     const transfer = await stripe.transfers.create({
-      amount: amount * 100,
+      amount: amount,
       currency: currency,
-      destination: account,
+      destination: stripeAccount,
       transfer_group: "distribute payment",
     });
     return res.status(201).json(transfer);
@@ -130,16 +133,21 @@ exports.receivePayment = async (req, res) => {
 
 exports.getOrder = async (req, res) => {
   email = req.header("email");
-  order = await db.collection("orders").doc(email).get();
-  return order.data();
+  try {
+    order = await db.collection("orders").doc(email).get();
+    return res.status(200).json(order.data());
+  } catch (error) {
+    return res.status(400).json(error);
+  }
 };
 
 exports.createOrder = async (req, res) => {
   const { orders, buyerEmail } = req.body;
+  console.log(orders)
   try {
     orderInfo = await calculatePrice(orders, buyerEmail);
     console.log(orderInfo);
-    for (OrderDetail of orderInfo.transactionDetail) {
+    for (orderDetail of orderInfo.transactionDetail) {
       db.collection("orders")
         .doc(buyerEmail)
         .set(
@@ -152,7 +160,7 @@ exports.createOrder = async (req, res) => {
           { merge: true }
         );
       db.collection("orders")
-        .doc(OrderDetail.email)
+        .doc(orderDetail.email)
         .set(
           {
             orderList: admin.firestore.FieldValue.arrayUnion({
@@ -165,9 +173,11 @@ exports.createOrder = async (req, res) => {
     }
     res.status(200).send(orderInfo);
   } catch (error) {
+    console.log(error);
     return res.status(400).json(error);
   }
-}
+};
+
 
 exports.webhook = async (req, res) => {
   // Check if webhook signing is configured.

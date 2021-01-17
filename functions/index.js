@@ -22,13 +22,23 @@ const {
   storeNearCustomer,
 } = require("./handlers/user");
 const { shopifyLogin, shopifyRedirect } = require("./handlers/shopify");
-const { productList, modifyInventory, getLocation} = require("./handlers/product");
-const { createPaymentIntent, webhook, createOrder } = require("./handlers/checkout");
+const {
+  productList,
+  modifyInventory,
+  getLocation,
+  savePrice,
+} = require("./handlers/product");
+const {
+  createPaymentIntent,
+  webhook,
+  createOrder,
+  getOrder,
+  receivePayment,
+} = require("./handlers/checkout");
 const { setupConnectedAccount } = require("./handlers/connectedAccount");
 
 app.post("/signup", signup);
 app.post("/login", login);
-
 
 app.get("/shopify", shopifyLogin);
 app.get("/shopify/callback", shopifyRedirect);
@@ -50,6 +60,12 @@ app.post("/modifyInventory", modifyInventory);
 
 app.post("/setupConnectedAccount", setupConnectedAccount);
 
-app.get("/getLocation", getLocation)
+app.get("/getLocation", getLocation);
+
+app.get("/getOrder", getOrder);
+
+app.post("/savePrice", savePrice);
+
+app.post("/receivePayment", receivePayment);
 
 exports.api = functions.https.onRequest(app);

@@ -115,6 +115,19 @@ function geocode(location) {
     },
   });
 }
+
+function getDistance(location_1, location_2) {
+  return axios.get(
+    "https://maps.googleapis.com/maps/api/distancematrix/json?units=metric",
+    {
+      params: {
+        origins: location_1.latitude + "," + location_1.longitude,
+        destinations: location_2[0] + "," + location_2[1],
+        key: "AIzaSyBBWfC_zaiGD2H8qWcxnSbnb5jKs7nKfc8",
+      },
+    }
+  );
+}
 exports.login = async (request, response) => {
   const user = {
     email: request.body.email,
@@ -208,23 +221,40 @@ exports.storeNearCustomer = async (request, response) => {
       let shopifyToken = user.data().userCredential.shopifyToken;
       let connectedAccount = user.data().userCredential.stripe_account;
       const shopProduct = await shopifyProductList(shopName, shopifyToken);
-
+      console.log(shopProduct);
       for (const [barcode, product] of Object.entries(shopProduct)) {
         if (
           barcode === info.barcode &&
           shopName !== info.currentShopName &&
           connectedAccount
         ) {
-          console.log("here");
+          // console.log("here");
           coordinates.push(doc.data().coordinates);
           let param = {
             inventory_item_ids: product.inventory_item_id,
             location_ids: locationId,
           };
-          console.log(shopName, shopifyToken, param);
+          // console.log(shopName, shopifyToken, param);
           let inventoryData = await getInventory(shopName, shopifyToken, param);
-          console.log(inventoryData);
+          // console.log(inventoryData);
           if (inventoryData.inventory_levels.length !== 0) {
+            console.log(locationId);
+            let locationRef = db
+              .collection("locations")
+              .doc(locationId.toString());
+            let location = await locationRef.get();
+            console.log(location);
+            distance = await getDistance(location.data().coordinates, [
+              info.latitude,
+              info.longitude,
+            ]);
+            console.log(distance.data.rows[0].elements[0].distance.text);
+            let drivingDistance = parseFloat(
+              distance.data.rows[0].elements[0].distance.text
+                .toLowerCase()
+                .replace(" km", "")
+            );
+            let commuteFee = drivingDistance * 1;
             ans.push({
               barcode: barcode,
               product: product,
@@ -233,11 +263,16 @@ exports.storeNearCustomer = async (request, response) => {
               connectedAccount: connectedAccount,
               available: inventoryData.inventory_levels[0].available,
               locationId: locationId,
+              distance: drivingDistance,
+              commuteFee: commuteFee,
             });
           }
         }
       }
     }
+    ans.sort(function (a, b) {
+      return a.commuteFee + a.product.price - (b.commuteFee + b.product.price);
+    });
     return response.status(200).json(ans);
   } catch (error) {
     console.log("Error getting documents: ", error);
