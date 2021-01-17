@@ -35,6 +35,7 @@ const {
   getOrder,
   receivePayment,
 } = require("./handlers/checkout");
+
 const { setupConnectedAccount } = require("./handlers/connectedAccount");
 
 app.post("/signup", signup);
@@ -53,6 +54,7 @@ app.get("/storeNearCustomer", storeNearCustomer);
 
 app.post("/checkout", createPaymentIntent);
 app.post("/createOrder", createOrder);
+app.get("/getOrder", getOrder);
 
 app.post("/webhook", webhook);
 
