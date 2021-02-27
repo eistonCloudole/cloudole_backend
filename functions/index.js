@@ -17,8 +17,7 @@ const { db } = require("./util/admin");
 const {
   signup,
   login,
-  addUserDetails,
-  getUser,
+  storeToken,
   storeNearCustomer,
 } = require("./handlers/user");
 const { shopifyLogin, shopifyRedirect } = require("./handlers/shopify");
@@ -38,6 +37,7 @@ const {
 
 const { setupConnectedAccount } = require("./handlers/connectedAccount");
 
+app.post("/storeToken", storeToken)
 app.post("/signup", signup);
 app.post("/login", login);
 

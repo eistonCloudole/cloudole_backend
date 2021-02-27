@@ -17,16 +17,33 @@ const GeoFirestore = geofirestore.initializeApp(firestore);
 const geocollection = GeoFirestore.collection("locations");
 const stripe = require("stripe")(functions.config().stripe.token);
 
+
+exports.storeToken = (request, response) => {
+  try {
+    const res = await db.collection('stores').doc(request.body.shopName).set(request.body.shopToken)
+    return response.status(200)
+  }
+  catch (error) {
+    return response.status(400)
+  }
+}
+
+
 exports.signup = (request, response) => {
   const newUser = {
     email: request.body.email,
     password: request.body.password,
     confirmPassword: request.body.confirmPassword,
-    shopifyToken: request.body.shopifyToken,
     shopName: request.body.shopName,
     createdAt: new Date().toISOString(),
   };
-
+  const tokenRef = db.collection('stores').doc(newUser.email);
+  const doc = await tokenRef.get();
+  if (!doc.exists) {
+    return response.status(404);
+  } else {
+    newUser.shopifyToken = doc.data()
+  }
   const { valid, errors } = validateSignupData(newUser);
 
   if (!valid) return response.status(400).json(errors);
