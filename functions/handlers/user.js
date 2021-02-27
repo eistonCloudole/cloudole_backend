@@ -111,7 +111,7 @@ function geocode(location) {
   return axios.get("https://maps.googleapis.com/maps/api/geocode/json", {
     params: {
       address: location,
-      key: "AIzaSyBBWfC_zaiGD2H8qWcxnSbnb5jKs7nKfc8",
+      key: functions.config().google.key,
     },
   });
 }
@@ -123,7 +123,7 @@ function getDistance(location_1, location_2) {
       params: {
         origins: location_1.latitude + "," + location_1.longitude,
         destinations: location_2[0] + "," + location_2[1],
-        key: "AIzaSyBBWfC_zaiGD2H8qWcxnSbnb5jKs7nKfc8",
+        key: functions.config().google.key,
       },
     }
   );

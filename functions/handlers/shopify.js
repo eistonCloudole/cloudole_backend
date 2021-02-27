@@ -1,10 +1,10 @@
 const nonce = require('nonce')();
-
-const apiKey = '3184f521fc3473624d2142ae452aaec6';
-const apiSecret = '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';
+const functions = require("firebase-functions");
+const apiKey = functions.config().shopify.apikey;
+const apiSecret = functions.config().shopify.apisecretkey;
 const scopes = 'read_products,read_inventory,write_inventory';
-const forwardingAddress = "https://us-central1-cloudole-2f23d.cloudfunctions.net/api";
-const frontendAddress = "https://cloudole-2f23d.web.app/shopify";
+const forwardingAddress = functions.config().url.forwardingaddress;
+const frontendAddress = functions.config().url.frontendaddress;
 const axios = require('axios');
 
 exports.shopifyLogin = (req, res) => {
