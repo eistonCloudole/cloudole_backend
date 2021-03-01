@@ -19,12 +19,13 @@ const stripe = require("stripe")(functions.config().stripe.token);
 
 
 exports.storeToken = async (request, response) => {
+  console.log(request.body.shopName, request.body.shopToken)
   try {
-    const res = await db.collection('stores').doc(request.body.shopName).set(request.body.shopToken)
-    return response.status(200)
+    const res = await db.collection('stores').doc(request.body.shopName).set({token: request.body.shopToken})
+    return response.status(200).json(res)
   }
   catch (error) {
-    return response.status(400)
+    return response.status(400).json(error)
   }
 }
 
@@ -42,7 +43,8 @@ exports.signup = async (request, response) => {
   if (!doc.exists) {
     return response.status(404);
   } else {
-    newUser.shopifyToken = doc.data()
+    newUser.shopifyToken = doc.data().token
+    console.log(newUser.shopifyToken)
   }
   const { valid, errors } = validateSignupData(newUser);
 
