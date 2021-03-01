@@ -18,7 +18,7 @@ const geocollection = GeoFirestore.collection("locations");
 const stripe = require("stripe")(functions.config().stripe.token);
 
 
-exports.storeToken = (request, response) => {
+exports.storeToken = async (request, response) => {
   try {
     const res = await db.collection('stores').doc(request.body.shopName).set(request.body.shopToken)
     return response.status(200)
@@ -29,7 +29,7 @@ exports.storeToken = (request, response) => {
 }
 
 
-exports.signup = (request, response) => {
+exports.signup = async (request, response) => {
   const newUser = {
     email: request.body.email,
     password: request.body.password,

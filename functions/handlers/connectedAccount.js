@@ -6,9 +6,9 @@ const { admin, db } = require("../util/admin")
 
 exports.setupConnectedAccount = async(req, res)=> {
     const {email} = req.body
-    const isSetup = false
+    var isSetup = false
     const doc = await db.collection('users').doc(email).get()
-    const stripeAccount= doc.get('userCredential').stripe_account;
+    var stripeAccount= doc.get('userCredential').stripe_account;
     console.log(stripeAccount)
         try { 
             if (stripeAccount === "") {
